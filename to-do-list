@@ -1,35 +1,61 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
-int main() {
-    // Define a file pointer
-    FILE *file;
+// Define the maximum number of reminders
+#define MAX_REMINDERS 10
 
-    // Open a file for writing (or create if it doesn't exist)
-    file = fopen("reminders.txt", "w");
+// Structure to hold reminders
+struct Reminder {
+    char text[100];
+    int hour;
+    int minute;
+};
 
-    if (file == NULL) {
-        printf("Unable to open the file.\n");
-        return 1;
-    }
-
-    // Prompt the user to enter reminders
-    printf("Enter your reminders/to-do list for tomorrow (press Enter to finish):\n");
-    char reminder[1000];
-    while (1) {
-        fgets(reminder, sizeof(reminder), stdin);
-
-        if (strcmp(reminder, "\n") == 0) {
+// Function to get reminders from the user
+void getReminders(struct Reminder *reminders, int *numReminders) {
+    printf("Enter your reminders for tomorrow night:\n");
+    
+    for (int i = 0; i < MAX_REMINDERS; i++) {
+        printf("Reminder %d (HH:MM text): ", i + 1);
+        scanf("%d:%d %[^\n]", &reminders[i].hour, &reminders[i].minute, reminders[i].text);
+        getchar(); // Consume the newline character
+        
+        (*numReminders)++;
+        
+        char another;
+        printf("Add another reminder? (y/n): ");
+        scanf(" %c", &another);
+        if (another != 'y' && another != 'Y') {
             break;
         }
+    }
+}
 
-        fprintf(file, "%s", reminder);
+// Function to create a BAT file with reminders
+void createBatchFile(struct Reminder *reminders, int numReminders) {
+    FILE *batchFile = fopen("reminders.bat", "w");
+    if (batchFile == NULL) {
+        printf("Error: Unable to create the batch file.\n");
+        return;
     }
 
-    // Close the file
-    fclose(file);
+    fprintf(batchFile, "@echo off\n");
+    for (int i = 0; i < numReminders; i++) {
+        fprintf(batchFile, "echo Reminder %d: %02d:%02d - %s\n", i + 1, reminders[i].hour, reminders[i].minute, reminders[i].text);
+    }
+    fprintf(batchFile, "pause\n");
+    fclose(batchFile);
+}
 
-    printf("Reminders saved successfully.\n");
+int main() {
+    struct Reminder reminders[MAX_REMINDERS];
+    int numReminders = 0;
+
+    getReminders(reminders, &numReminders);
+    createBatchFile(reminders, numReminders);
+
+    printf("Reminders saved to 'reminders.bat'.\n");
+
     return 0;
 }
